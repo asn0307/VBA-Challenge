@@ -1,0 +1,98 @@
+Sub WORKSHEET_LOOP()
+    Dim xsheet As Worksheet
+    For Each xsheet In ThisWorkbook.Worksheets
+        xsheet.Select
+        Call WORKSHEET_LOOP
+        xsheet.Range("I:Q").Columns.AutoFit
+    Next xsheet
+End Sub
+
+
+Sub ticker_data()
+
+    ' Declare all variables
+    Dim i, lastrow, counter As Long
+    Dim summ, yearlyChange, percentMin, percentMax, volumeMax As Long
+    Dim priceFlag As Boolean
+    Dim percentMinTicker, percentMaxTicker, volumeMaxTicker As String
+    ' Initialize variables
+    lastrow = Cells(Rows.Count, 1).End(xlUp).Row
+    counter = 2
+    summ = 0
+    priceFlag = True
+    percentMin = 1E+99
+    percentMax = -1E+99
+    volumeMax = -1E+99
+    For i = 2 To lastrow
+        If Cells(i + 1, 1).Value <> Cells(i, 1).Value Then
+            ' Save ticker symbol
+            Cells(counter, 9).Value = Cells(i, 1).Value
+            ' Calculate Yearly Change, apply conditional formatting
+            closePrice = Cells(i, 6).Value
+            yearlyChange = closePrice - openPrice
+            Cells(counter, 10).Value = yearlyChange
+            If yearlyChange < 0 Then
+                Cells(counter, 10).Interior.ColorIndex = 3
+                Cells(counter, 11).Interior.ColorIndex = 3
+            ElseIf yearlyChange > 0 Then
+                Cells(counter, 10).Interior.ColorIndex = 4
+                Cells(counter, 11).Interior.ColorIndex = 4
+            End If
+            ' Calculate percent change
+            If yearlyChange = 0 Or openPrice = 0 Then
+                Cells(counter, 11).Value = 0
+            Else
+                Cells(counter, 11).Value = Format(yearlyChange / openPrice, "#.##%")
+            End If
+            ' Save Total Volume
+            Total = Total + Cells(i, 7).Value
+            Cells(counter, 12).Value = Total
+            ' Values for greatest decrease/increase and greatest volume
+            If Cells(counter, 11).Value > percentMax Then
+                If Cells(counter, 11).Value = ".%" Then
+                Else
+                    percentMax = Cells(counter, 11).Value
+                    percentMaxTicker = Cells(counter, 9).Value
+                End If
+            ElseIf Cells(counter, 11).Value < percentMin Then
+                percentMin = Cells(counter, 11).Value
+                percentMinTicker = Cells(counter, 9).Value
+            ElseIf Cells(counter, 12).Value > volumeMax Then
+                volumeMax = Cells(counter, 12).Value
+                volumeMaxTicker = Cells(counter, 9).Value
+            End If
+            ' Reset variables, next ticker symbol
+            counter = counter + 1
+            summ = 0
+            priceFlag = True
+        Else
+            ' Save open price value at the start of the year
+            If priceFlag Then
+                openPrice = Cells(i, 3).Value
+                priceFlag = False
+            End If
+            ' Ticker symbols are the same, save volume value
+            Total = Total + Cells(i, 7).Value
+        End If
+    Next i
+    ' Save the values min/max
+    Cells(2, 17).Value = Format(percentMax, "#.##%")
+    Cells(3, 17).Value = Format(percentMin, "#.##%")
+    Cells(4, 17).Value = volumeMax
+    ' Assign headers
+    Cells(1, 9).Value = "Ticker"
+    Cells(1, 10).Value = "Yearly Change"
+    Cells(1, 11).Value = "Percent Change"
+    Cells(1, 12).Value = "Total Stock Volume"
+    Cells(2, 15).Value = "Greatest % Increase"
+    Cells(3, 15).Value = "Greatest % Decrease"
+    Cells(4, 15).Value = "Greatest Total Volume"
+    Cells(1, 16).Value = "Ticker"
+    Cells(1, 17).Value = "Volume"
+    ' Assign ticker symbols
+    Cells(2, 16).Value = percentMaxTicker
+    Cells(3, 16).Value = percentMinTicker
+    Cells(4, 16).Value = volumeMaxTicker
+    
+  
+End Sub
